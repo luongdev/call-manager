@@ -29,5 +29,6 @@ module.exports = {
         "array-bracket-newline": ["error", {"multiline": true}],
         "array-element-newline": ["error", "consistent"],
         "block-spacing": "error",
+        "quotes": ["error", "single", { "allowTemplateLiterals": true }]
     },
 };

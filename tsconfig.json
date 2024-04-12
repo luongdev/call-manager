@@ -29,7 +29,13 @@
       ],
       "@config/*": [
         "src/config/*"
-      ]
+      ],
+      "@providers/*": [
+        "src/providers/*"
+      ],
+      "@database/*": [
+        "src/database/*"
+      ],
     }
   }
 }
