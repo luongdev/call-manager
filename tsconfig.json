@@ -36,6 +36,9 @@
       "@database/*": [
         "src/database/*"
       ],
+      "@logger/*": [
+        "src/logger/*"
+      ],
     }
   }
 }

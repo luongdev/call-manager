@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import appConfig from '@config/app.config';
 import databaseConfig from '@database/database.config';
 import { DatabaseProviderModule } from '@providers/database/database-provider.module';
+import { LoggerProviderModule } from './providers/logger/logger-provider.module';
+import { TestModule } from './modules/test/test.module';
 
 @Module({
   imports: [
@@ -12,7 +14,9 @@ import { DatabaseProviderModule } from '@providers/database/database-provider.mo
       load: [appConfig, databaseConfig],
       envFilePath: ['.env'],
     }),
-    DatabaseProviderModule
+    LoggerProviderModule,
+    DatabaseProviderModule,
+    TestModule
   ],
   providers: [AppService],
 })
