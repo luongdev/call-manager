@@ -39,6 +39,9 @@
       "@logger/*": [
         "src/logger/*"
       ],
+      "@freeswitch/*": [
+        "src/freeswitch/*"
+      ],
     }
   }
 }
