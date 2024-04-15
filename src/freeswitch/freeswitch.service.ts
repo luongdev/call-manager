@@ -1,4 +1,4 @@
-import { FreeSwitchClient, FreeSwitchClientLogger, FreeSwitchResponse } from 'esl';
+import { FreeSwitchClient, FreeSwitchClientLogger, FreeSwitchResponse, FreeSwitchServer } from 'esl';
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { LoggerFactory } from '@providers/logger/logger.factory';
 import { LoggerService } from '@logger/logger.service';
@@ -9,17 +9,17 @@ class Logger implements FreeSwitchClientLogger {
   }
 
   debug(msg: string, data: unknown): void {
-    this._log?.debug(`${msg}`, data);
+    return this._log?.debug(`${msg}`, data);
   }
 
   error(msg: string, data: unknown): void {
     const error = data?.['error'];
 
-    this._log?.error(msg, error, data);
+    return this._log?.error(`${msg}. Reply: {}`, error, data);
   }
 
   info(msg: string, data: unknown): void {
-    this._log?.log(msg, data);
+    return this._log?.log(msg, data);
   }
 
 }
@@ -64,8 +64,49 @@ export class FreeswitchService implements OnApplicationBootstrap {
     });
   }
 
-  onApplicationBootstrap() {
-    this._client.connect();
+  async onApplicationBootstrap() {
+    // this._client.connect();
+
+    const server = new FreeSwitchServer({
+      all_events: true,
+      my_events: false,
+      logger: new Logger(this._log),
+    });
+
+    await server.listen({
+      host: '0.0.0.0',
+      port: 3001
+    });
+
+    server.on('connection', async (socket, data) => {
+      this._log.info('New connection from FreeSwitch: {}', data);
+
+      await socket.linger();
+
+      socket.on('DTMF', async (event) => {
+        console.log('DTMF', event);
+      });
+
+      // socket.on('RECV_INFO', async (event) => {
+      //
+      //   if (event.body['_body']) {
+      //     try {
+      //       console.log(await socket.api(`uuid_kill ${event.body['Unique-ID']}`));
+      //     } catch (e) {
+      //       console.log('Error', e);
+      //     }
+      //   }
+      // });
+
+      await socket.execute('answer', null);
+      setTimeout(async () => {
+        await socket.execute('bridge', '{hangup_after_bridge=false}sofia/gateway/to_ivr/0987654321');
+      }, 5000);
+    });
+
+    setInterval(async () => {
+      console.log('CURRENT: ', await server.getConnectionCount());
+    }, 5000);
   }
 
   async exec(app: string, ...args: string[]) {
@@ -77,4 +118,5 @@ export class FreeswitchService implements OnApplicationBootstrap {
       this._log.error('Error executing command', e);
     }
   }
+
 }
