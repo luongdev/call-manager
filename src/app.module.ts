@@ -7,7 +7,7 @@ import freeswitchConfig from '@freeswitch/freeswitch.config';
 import { DatabaseProviderModule } from '@providers/database/database-provider.module';
 import { LoggerProviderModule } from './providers/logger/logger-provider.module';
 import { TestModule } from './modules/test/test.module';
-import { EventSocketProviderModule } from './providers/freeswitch/event-socket-provider.module';
+import { FreeswitchModule } from './freeswitch/freeswitch.module';
 
 @Module({
   imports: [
@@ -16,9 +16,9 @@ import { EventSocketProviderModule } from './providers/freeswitch/event-socket-p
       load: [appConfig, databaseConfig, freeswitchConfig],
       envFilePath: ['.env'],
     }),
+    FreeswitchModule,
     LoggerProviderModule,
     DatabaseProviderModule,
-    EventSocketProviderModule,
     TestModule
   ],
   providers: [AppService],

@@ -3,13 +3,10 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { LoggerFactory } from '@providers/logger/logger.factory';
 import { LoggerService } from '@logger/logger.service';
 import { FreeswitchConfig } from './freeswitch.config';
-import { ConfigService } from '@nestjs/config';
-import { AllConfigType } from '@config/config.type';
 
 class Logger implements FreeSwitchClientLogger {
   constructor(private readonly _log: LoggerService) {
   }
-
 
   debug(msg: string, data: unknown): void {
     this._log?.debug(`${msg}`, data);
@@ -27,28 +24,30 @@ class Logger implements FreeSwitchClientLogger {
 
 }
 
+type ESLSocket = FreeSwitchResponse;
 
 @Injectable()
 export class FreeswitchService implements OnApplicationBootstrap {
   private readonly _client: FreeSwitchClient;
+  private readonly _sendTimeout: number;
 
   private readonly _log: LoggerService;
 
-  constructor(loggerFactory: LoggerFactory, configService: ConfigService<AllConfigType>) {
-    this._log = loggerFactory.createLogger(FreeswitchService);
-    const fsConfig = configService.get<FreeswitchConfig>('fs', { infer: true });
+  private _instance: ESLSocket;
 
-    const opts = {
+  constructor(loggerFactory: LoggerFactory, fsConfig: FreeswitchConfig) {
+    this._log = loggerFactory.createLogger(FreeswitchService);
+    this._client = new FreeSwitchClient({
       host: fsConfig.host,
       port: fsConfig.port,
       password: fsConfig.password,
       logger: new Logger(this._log),
-    };
-
-    this._client = new FreeSwitchClient(opts);
+    });
+    this._sendTimeout = fsConfig.sendTimeout;
 
     this._client.on('connect', (call: FreeSwitchResponse) => {
-      this._log.log('Connected to FreeSwitch: {}', call.stats);
+      this._instance = call;
+      this._log.log('Connected to FreeSwitch [{}:{}]', fsConfig.host, fsConfig.port);
     });
 
     this._client.on('error', (error: Error) => {
@@ -67,5 +66,15 @@ export class FreeswitchService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     this._client.connect();
+  }
+
+  async exec(app: string, ...args: string[]) {
+    try {
+      const res = await this._instance?.api(`${app} ${args?.join(' ')}`, this._sendTimeout);
+
+      return res?.body;
+    } catch (e) {
+      this._log.error('Error executing command', e);
+    }
   }
 }
