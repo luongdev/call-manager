@@ -10,7 +10,11 @@ const objToString = (arg: any) => {
     const m = moment(arg);
     return m.format('YYYY-MM-DD HH:mm:ss');
   } else if (typeof arg === 'object') {
-    return JSON.stringify(arg, null, 2);
+    try {
+      return JSON.stringify(arg, null, 2);
+    } catch (e) {
+      return String(arg);
+    }
   } else {
     return String(arg);
   }

@@ -25,7 +25,7 @@ module.exports = {
         'no-unused-vars': 'off',
         "no-tabs": "off",
         "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
-        "padded-blocks": ["error", {"blocks": "never", "classes": "never", "switches": "never"}],
+        // "padded-blocks": ["error", {"blocks": "never", "classes": "never", "switches": "never"}],
         "array-bracket-newline": ["error", {"multiline": true}],
         "array-element-newline": ["error", "consistent"],
         "block-spacing": "error",
