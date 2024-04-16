@@ -11,7 +11,7 @@ export class FreeswitchConfig {
 }
 
 
-export default registerAs<FreeswitchConfig>('fs', () => {
+export default registerAs<FreeswitchConfig>('freeswitch', () => {
   const sendTimeout = parseInt(process.env.FS_SEND_TIMEOUT) || 2000;
 
   return {

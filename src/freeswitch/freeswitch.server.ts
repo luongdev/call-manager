@@ -50,10 +50,6 @@ export  class FreeswitchServer implements OnApplicationBootstrap {
 
 
   private async onSocketConnect(socket: FreeSwitchResponse, { data, body, uuid }) {
-    FreeSwitchResponse.default_event_timeout = 10000;
-    FreeSwitchResponse.default_send_timeout = 10000;
-    FreeSwitchResponse.default_command_timeout = 10000;
-
     if (!uuid || (!data && !body)) {
       this._log.warn('Invalid connection from FreeSwitch: {}', uuid);
       this._log.debug('Data: {}', JSON.stringify(data));

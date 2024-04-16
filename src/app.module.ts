@@ -13,8 +13,7 @@ import { FreeswitchModule } from './freeswitch/freeswitch.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, freeswitchConfig],
-      envFilePath: ['.env'],
+      load: [appConfig, databaseConfig, freeswitchConfig]
     }),
     FreeswitchModule,
     LoggerProviderModule,

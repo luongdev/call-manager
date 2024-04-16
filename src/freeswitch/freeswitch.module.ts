@@ -12,7 +12,7 @@ import { FreeswitchServer } from './freeswitch.server';
     {
       provide: FreeswitchConfig,
       useFactory: (allConfig: ConfigService<AllConfigType>) => {
-        return allConfig.get<FreeswitchConfig>('fs', { infer: true });
+        return allConfig.get<FreeswitchConfig>('freeswitch', { infer: true });
       },
       inject: [ConfigService<AllConfigType>]
     }
