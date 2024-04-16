@@ -5,6 +5,9 @@ export class FreeswitchConfig {
   port: number;
   password: string;
   sendTimeout: number;
+  serverPort: number;
+  serverEnabled: boolean;
+  clientEnabled: boolean;
 }
 
 
@@ -16,5 +19,8 @@ export default registerAs<FreeswitchConfig>('fs', () => {
     port: parseInt(process.env.FS_PORT) || 8021,
     password: process.env.FS_PASSWORD || 'ClueCon',
     sendTimeout: sendTimeout < 0 ? 2000 : sendTimeout,
+    serverPort: parseInt(process.env.FS_SERVER_PORT) || 65055,
+    clientEnabled: process.env.FS_CLIENT_ENABLED === 'true',
+    serverEnabled: process.env.FS_SERVER_ENABLED === 'true',
   };
 });

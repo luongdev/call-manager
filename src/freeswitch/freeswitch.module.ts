@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common';
 import { FreeswitchService } from './freeswitch.service';
 import { FreeswitchConfig } from './freeswitch.config';
 import { ConfigService } from '@nestjs/config';
-import { AllConfigType } from '../config/config.type';
+import { AllConfigType } from '@config/config.type';
+import { FreeswitchServer } from './freeswitch.server';
 
 @Module({
   providers: [
     FreeswitchService,
+    FreeswitchServer,
     {
       provide: FreeswitchConfig,
       useFactory: (allConfig: ConfigService<AllConfigType>) => {
@@ -15,7 +17,7 @@ import { AllConfigType } from '../config/config.type';
       inject: [ConfigService<AllConfigType>]
     }
   ],
-  exports: [FreeswitchService, FreeswitchConfig],
+  exports: [FreeswitchService, FreeswitchServer, FreeswitchConfig]
 })
 export class FreeswitchModule {
 
