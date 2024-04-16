@@ -20,7 +20,7 @@ export  class FreeswitchServer implements OnApplicationBootstrap {
 
     this._serverEnabled = fsConfig.serverEnabled;
     this._serverListenPort = fsConfig.serverPort;
-    this._server = new FreeSwitchServer({ logger: new Logger(this._log) });
+    this._server = fsConfig.serverEnabled && new FreeSwitchServer({ logger: new Logger(this._log) });
 
     this._server.on('connection', this.onSocketConnect.bind(this));
     this._server.on('drop', this.onSocketDrop.bind(this));
