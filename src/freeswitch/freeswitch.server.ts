@@ -16,8 +16,9 @@ export  class FreeswitchServer implements OnApplicationBootstrap {
 
 
   constructor(loggerFactory: LoggerFactory, fsConfig: FreeswitchConfig) {
-    this._log = loggerFactory.createLogger(FreeswitchServer);
+    if (!fsConfig.serverEnabled) return;
 
+    this._log = loggerFactory.createLogger(FreeswitchServer);
     this._serverEnabled = fsConfig.serverEnabled;
     this._serverListenPort = fsConfig.serverPort;
     this._server = fsConfig.serverEnabled && new FreeSwitchServer({ logger: new Logger(this._log) });

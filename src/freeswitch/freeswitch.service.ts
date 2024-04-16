@@ -18,9 +18,11 @@ export class FreeswitchService implements OnApplicationBootstrap {
 
   private readonly _log: LoggerService;
   constructor(loggerFactory: LoggerFactory, fsConfig: FreeswitchConfig) {
+    if (!fsConfig.clientEnabled) return;
+    
     this._log = loggerFactory.createLogger(FreeswitchService);
     this._clientEnabled = fsConfig.clientEnabled;
-    this._client = fsConfig.clientEnabled && new FreeSwitchClient({
+    this._client = new FreeSwitchClient({
       host: fsConfig.host,
       port: fsConfig.port,
       password: fsConfig.password,
