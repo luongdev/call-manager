@@ -9,7 +9,7 @@
     "build": "nest build",
     "debug-watch": "nest start --debug --watch",
     "debug": "nest start --debug",
-    "start": "node dist/main",
+    "start": "nest build && node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "dependencies": {

@@ -1,10 +1,9 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { FreeSwitchServer } from 'esl';
+import { FreeSwitchResponse, FreeSwitchServer } from 'esl';
 import { LoggerService } from '@logger/logger.service';
 import { LoggerFactory } from '../providers/logger/logger.factory';
 import { FreeswitchConfig } from './freeswitch.config';
-import { FreeSwitchResponse } from 'esl/types/src/response';
-import { Logger, SocketConnection, SocketDrop } from './freeswitch.type';
+import { Logger, SocketDrop } from './freeswitch.type';
 
 @Injectable()
 export  class FreeswitchServer implements OnApplicationBootstrap {
@@ -21,7 +20,7 @@ export  class FreeswitchServer implements OnApplicationBootstrap {
 
     this._serverEnabled = fsConfig.serverEnabled;
     this._serverListenPort = fsConfig.serverPort;
-    this._server = new FreeSwitchServer({ all_events: true, my_events: false, logger: new Logger(this._log) });
+    this._server = new FreeSwitchServer({ logger: new Logger(this._log) });
 
     this._server.on('connection', this.onSocketConnect.bind(this));
     this._server.on('drop', this.onSocketDrop.bind(this));
@@ -32,45 +31,66 @@ export  class FreeswitchServer implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     if (this._serverEnabled) {
       await this._server.listen({ host: '0.0.0.0', port: this._serverListenPort });
+
+      setInterval(async () => {
+        console.log('Calls: ', await this.countConnections());
+      }, 5000);
     }
 
   }
 
-  private async onSocketConnect(socket: FreeSwitchResponse, data: SocketConnection) {
-    await socket.linger();
+  async countConnections() {
+    return await this._server.getConnectionCount();
+  }
 
-    this._log.info('New connection from FreeSwitch: {}', data);
+  getMaxConnections() {
+    return this._server.getMaxConnections();
+  }
 
 
-    socket.on('DTMF',  (event) => {
-      const dtmfEvent = {
-        'digit': event.body['DTMF-Digit'],
-        'duration': event.body['DTMF-Duration'],
-        'source': event.body['DTMF-Source'],
-        'uniqueId': event.body['Unique-ID'],
-      };
-      console.log('DTMF', dtmfEvent);
-    });
 
-    socket.on('RECV_INFO', async (event) => {
+  private async onSocketConnect(socket: FreeSwitchResponse, { data, body, uuid }) {
+    FreeSwitchResponse.default_event_timeout = 10000;
+    FreeSwitchResponse.default_send_timeout = 10000;
+    FreeSwitchResponse.default_command_timeout = 10000;
 
-      if (event.body['_body']) {
-        try {
-          console.log(await socket.api(`uuid_kill ${event.body['Unique-ID']}`));
-        } catch (e) {
-          console.log('Error', e);
-        }
+    if (!uuid || (!data && !body)) {
+      this._log.warn('Invalid connection from FreeSwitch: {}', uuid);
+      this._log.debug('Data: {}', JSON.stringify(data));
+    }
+
+    const headers = body ?? data;
+    const dialedNumber = headers['variable_sip_to_user'] ?? headers['variable_sip_req_user'];
+    const phoneNumber = headers['Channel-Caller-ID-Number'] ?? headers['Channel-ANI'];
+
+    if (!dialedNumber || !phoneNumber) {
+      this._log.warn('Invalid connection from FreeSwitch: {}', uuid);
+    }
+
+    let result;
+    try {
+      result = await socket.execute('answer', null);
+    } catch (e) {
+      this._log.error('Error executing command', e);
+    }
+    if (result?.headers?.['Reply-Text']?.indexOf('+OK') > -1) {
+      try {
+        await socket.linger();
+        socket.on('CHANNEL_HANGUP_COMPLETE', (event) => {
+          console.log('CHANNEL_HANGUP_COMPLETE', event.headers);
+        });
+
+        result = await socket.execute(
+          'bridge',
+          // eslint-disable-next-line max-len
+          `{hangup_after_bridge=false,sip_from_user=${phoneNumber},sip_h_X-ID=${uuid}}sofia/gateway/to_ivr/${dialedNumber}`
+        );
+      } catch (e) {
+        this._log.error('Error executing command', e);
       }
-    });
+    }
 
-    await socket.execute('answer', null);
-    setTimeout(async () => {
-      await socket.execute('bridge', '{hangup_after_bridge=false}sofia/gateway/to_ivr/0987654321');
-    }, 5000);
-
-    setInterval(async () => {
-      console.log('CURRENT: ', await this._server.getConnectionCount());
-    }, 5000);
+    this._log.log('New connection from FreeSwitch: {}', uuid);
   }
 
   private async onSocketDrop(data: SocketDrop) {
@@ -81,4 +101,41 @@ export  class FreeswitchServer implements OnApplicationBootstrap {
     console.log('Error', error);
   }
 
+
+  // private async onSocketConnect(socket: FreeSwitchResponse, data: SocketConnection) {
+  //   await socket.linger();
+  //
+  //   this._log.info('New connection from FreeSwitch: {}', data);
+  //
+  //
+  //   socket.on('DTMF',  (event) => {
+  //     const dtmfEvent = {
+  //       'digit': event.body['DTMF-Digit'],
+  //       'duration': event.body['DTMF-Duration'],
+  //       'source': event.body['DTMF-Source'],
+  //       'uniqueId': event.body['Unique-ID'],
+  //     };
+  //     console.log('DTMF', dtmfEvent);
+  //   });
+  //
+  //   socket.on('RECV_INFO', async (event) => {
+  //
+  //     if (event.body['_body']) {
+  //       try {
+  //         console.log(await socket.api(`uuid_kill ${event.body['Unique-ID']}`));
+  //       } catch (e) {
+  //         console.log('Error', e);
+  //       }
+  //     }
+  //   });
+  //
+  //   await socket.execute('answer', null);
+  //   setTimeout(async () => {
+  //     await socket.execute('bridge', '{hangup_after_bridge=false}sofia/gateway/to_ivr/0987654321');
+  //   }, 5000);
+  //
+  //   setInterval(async () => {
+  //     console.log('CURRENT: ', await this._server.getConnectionCount());
+  //   }, 5000);
+  // }
 }
