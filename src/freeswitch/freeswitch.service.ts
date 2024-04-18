@@ -26,7 +26,7 @@ export class FreeswitchService implements OnApplicationBootstrap {
       host: fsConfig.host,
       port: fsConfig.port,
       password: fsConfig.password,
-      logger: new Logger(this._log),
+      logger: new Logger(this._log, fsConfig.debug),
     });
     this._sendTimeout = fsConfig.sendTimeout;
 

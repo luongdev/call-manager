@@ -8,6 +8,7 @@ export class FreeswitchConfig {
   serverPort: number;
   serverEnabled: boolean;
   clientEnabled: boolean;
+  debug: boolean;
 }
 
 
@@ -22,5 +23,6 @@ export default registerAs<FreeswitchConfig>('freeswitch', () => {
     serverPort: parseInt(process.env.FS_SERVER_PORT) || 65022,
     clientEnabled: process.env.FS_CLIENT_ENABLED === 'true',
     serverEnabled: process.env.FS_SERVER_ENABLED === 'true',
+    debug: process.env.FS_DEBUG === 'true',
   };
 });

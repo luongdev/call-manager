@@ -14,16 +14,22 @@ export  class FreeswitchServer implements OnApplicationBootstrap {
 
   private readonly _log: LoggerService;
 
-
   constructor(loggerFactory: LoggerFactory, fsConfig: FreeswitchConfig) {
     if (!fsConfig.serverEnabled) return;
 
     this._log = loggerFactory.createLogger(FreeswitchServer);
+    
     this._serverEnabled = fsConfig.serverEnabled;
     this._serverListenPort = fsConfig.serverPort;
-    this._server = fsConfig.serverEnabled && new FreeSwitchServer({ logger: new Logger(this._log) });
+    this._server = fsConfig.serverEnabled && new FreeSwitchServer({ logger: new Logger(this._log, fsConfig.debug) });
 
-    this._server.on('connection', this.onSocketConnect.bind(this));
+    this._server.on('connection', async (socket, { data, body, uuid }) => {
+      try {
+        await this.onSocketConnect(socket, {  data, body, uuid });
+      } catch (e) {
+        this._log.error('Execute call {}', e, uuid);
+      }
+    });
     this._server.on('drop', this.onSocketDrop.bind(this));
     this._server.on('error', this.onSocketError.bind(this));
 
@@ -64,40 +70,73 @@ export  class FreeswitchServer implements OnApplicationBootstrap {
       this._log.warn('Invalid connection from FreeSwitch: {}', uuid);
     }
 
-    let result;
-    try {
-      result = await socket.execute('answer', null);
-    } catch (e) {
-      this._log.error('Error executing command', e);
-    }
+    const CallUUIDHeader = 'Channel-Call-UUID';
+
+    let result = await socket.execute('answer', null);
     if (result?.headers?.['Reply-Text']?.indexOf('+OK') > -1) {
-      try {
-        await socket.linger();
-        socket.on('CHANNEL_HANGUP_COMPLETE', (event) => {
-          console.log('CHANNEL_HANGUP_COMPLETE', event.headers);
-        });
+      console.log('Data: ', JSON.stringify(await socket.filter(CallUUIDHeader, uuid)));
 
-        result = await socket.execute(
-          'bridge',
-          // eslint-disable-next-line max-len
-          `{hangup_after_bridge=false,sip_from_user=${phoneNumber},sip_h_X-ID=${uuid}}sofia/gateway/to_ivr/${dialedNumber}`
-        );
-      } catch (e) {
-        this._log.error('Error executing command', e);
-      }
+      socket.on('CHANNEL_HANGUP_COMPLETE', (event) => {
+        console.log('CHANNEL_HANGUP_COMPLETE', event.headers);
+      });
+
+      socket.on('CHANNEL_BRIDGE', (event) => {
+        socket['bridged'] = event?.body?.['Other-Leg-Unique-ID'];
+
+        console.log(`Channel ${uuid} is bridged with ${socket['bridged']}`);
+      });
+
+      socket.on('CHANNEL_UNBRIDGE', async (event) => {
+        try {
+          console.log(`Channel ${uuid} is unbridged with ${socket['bridged']}. Trying to route to ACD...`);
+
+          // result = await socket.execute(
+          //   'bridge',
+          //   `{sip_from_user=${phoneNumber},sip_h_X-ID=${uuid}}sofia/external/0969069069@103.229.40.170:5080`
+          // );
+        } catch (ignored) {}
+      });
+
+      socket.on('RECV_INFO', async (event) => {
+        if (event?.body?.['_body']) {
+          try {
+            console.log('RECV_INFO', event?.body?.['_body']);
+
+            if (socket['bridged']) {
+              console.log('Killing bridged channel ', await socket.api(`uuid_kill ${socket['bridged']}`));
+              console.log('Killing bridged channel ', socket['bridged']);
+            } else {
+              console.log('No bridged call to kill');
+            }
+          } catch (ignored) {}
+
+          // result = await socket.execute(
+          //   'bridge',
+          //   `{sip_from_user=${phoneNumber},sip_h_X-ID=${uuid}}sofia/gateway/to_ivr/${dialedNumber}`
+          // );
+        }
+      });
+
+      result = await socket.execute(
+        'bridge',
+        `{sip_from_user=${phoneNumber},sip_h_X-ID=${uuid}}sofia/gateway/to_ivr/${dialedNumber}`
+      );
+
+      console.log(JSON.stringify(result, null, 2));
     }
-
-    this._log.log('New connection from FreeSwitch: {}', uuid);
   }
 
   private async onSocketDrop(data: SocketDrop) {
     console.log('Drop', data);
+
+    await new Promise(resolve => resolve(null));
   }
 
   private async  onSocketError(error: Error) {
     console.log('Error', error);
-  }
 
+    await new Promise(resolve => resolve(null));
+  }
 
   // private async onSocketConnect(socket: FreeSwitchResponse, data: SocketConnection) {
   //   await socket.linger();

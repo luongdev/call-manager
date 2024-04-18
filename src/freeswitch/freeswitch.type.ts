@@ -19,11 +19,13 @@ export type SocketDrop = {
 
 
 export class Logger implements FreeSwitchClientLogger {
-  constructor(private readonly _log: LoggerService) {
+  constructor(private readonly _log: LoggerService, private readonly _debug = false) {
   }
 
   debug(msg: string, data: unknown): void {
-    return this._log?.debug(`${msg}`, data);
+    if (this._debug) {
+      return this._log?.debug(`${msg}`, data);
+    }
   }
 
   error(msg: string, data: unknown): void {
@@ -37,3 +39,4 @@ export class Logger implements FreeSwitchClientLogger {
   }
 
 }
+
