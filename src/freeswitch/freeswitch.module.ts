@@ -7,6 +7,7 @@ import { FreeswitchServer } from './freeswitch.server';
 import { AppConfig } from '@config/app.config';
 import { DatabaseProviderModule } from '../providers/database/database-provider.module';
 import { Channel } from './entity/channel.entity';
+import { ChannelController } from './controller/channel.controller';
 
 @Module({
   providers: [
@@ -28,7 +29,8 @@ import { Channel } from './entity/channel.entity';
     }
   ],
   imports: [DatabaseProviderModule, DatabaseProviderModule.forFeature(Channel)],
-  exports: [FreeswitchService, FreeswitchServer, FreeswitchConfig]
+  exports: [FreeswitchService, FreeswitchServer, FreeswitchConfig],
+  controllers: [ChannelController],
 })
 export class FreeswitchModule {
 

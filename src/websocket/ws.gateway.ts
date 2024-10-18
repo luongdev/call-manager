@@ -15,7 +15,8 @@ export class WsGateway implements OnGatewayInit, OnGatewayConnection<WebSocket>,
   handleConnection(client: WebSocket, ...args: any[]): any {
     client.on('message', (message: RawData, binary) => {
       if (!binary) {
-        client['uuid'] = message.toString();
+        const metadata = JSON.parse(message.toString());
+        client['uuid'] = metadata['id']
         this.streams[client['uuid']] = createWriteStream(`audio/received_customer_audio.wav`);
 
         return;

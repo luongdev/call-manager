@@ -8,6 +8,7 @@ import { AppConfig } from '../config/app.config';
 import { Channel } from './entity/channel.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { parse } from 'sdp-transform';
 
 @Injectable()
 export class FreeswitchServer implements OnApplicationBootstrap {
@@ -49,16 +50,11 @@ export class FreeswitchServer implements OnApplicationBootstrap {
     if (this._serverEnabled) {
       await this._server.listen({ host: '0.0.0.0', port: this._serverListenPort });
 
-      setInterval(async () => {
-        // await this.countConnections()
-        // console.log('Calls: ', await this.countConnections());
-        const channels = await this._channelRepository.find();
-        console.log('Channels: ', channels);
-
-      }, 5000);
+      // setInterval(async () => {
+      // await this.countConnections()
+      // console.log('Calls: ', await this.countConnections());
+      // }, 5000);
     }
-
-
   }
 
   async countConnections() {
@@ -76,28 +72,29 @@ export class FreeswitchServer implements OnApplicationBootstrap {
       this._log.debug('Data: {}', JSON.stringify(data));
     }
 
+    const reqSdp = parse(data['variable_switch_r_sdp']);
+    const rtpCodecs = reqSdp?.media?.find(m => m.type === 'audio')?.rtp?.map(r => r);
+
+    const metadata = {
+      id: uuid,
+      callerNum: data['Channel-ANI'] || data['variable_sip_from_user'],
+      calleeNum: data['Channel-Destination-Number'] || data['variable_sip_to_user'],
+      audio: {
+        ip: reqSdp?.connection?.ip,
+        port: reqSdp?.media.find(m => m.type === 'audio')?.port,
+        codecs: rtpCodecs,
+      }
+    };
+    const sample = 8000;
 
     const aResult = await socket.api(
-      `uuid_audio_fork ${uuid} start ${this._botAddress} mono 8000 botbug ${uuid} true true 8000`
+      // eslint-disable-next-line max-len
+      `uuid_audio_fork ${uuid} start ${this._botAddress} mono ${sample} botbug ${JSON.stringify(metadata)} true true ${sample}`
     );
 
     if (aResult) {
       this._log.info('Call {} connected', uuid);
     }
-
-    // let result = await socket.execute('answer', null);
-    // if (isOk(result)) {
-    //   result = await socket.execute('playback', 'silence_stream://-1');
-    //   if (isOk(result)) {
-    //     const aResult = await socket.api(
-    //       `uuid_audio_fork ${uuid} start ws://10.8.0.3:3006 mono 8000 botbug ${uuid} true true 8000`
-    //     );
-    //     if (isOk(aResult)) {
-    //       this._log.info('Call {} connected', uuid);
-    //     }
-    //   }
-    // }
-
   }
 
   private async onSocketDrop(data: SocketDrop) {
