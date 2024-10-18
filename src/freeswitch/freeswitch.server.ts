@@ -3,7 +3,11 @@ import { FreeSwitchResponse, FreeSwitchServer } from 'esl';
 import { LoggerService } from '@logger/logger.service';
 import { LoggerFactory } from '../providers/logger/logger.factory';
 import { FreeswitchConfig } from './freeswitch.config';
-import { isOk, Logger, SocketDrop } from './freeswitch.type';
+import { Logger, SocketDrop } from './freeswitch.type';
+import { AppConfig } from '../config/app.config';
+import { Channel } from './entity/channel.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class FreeswitchServer implements OnApplicationBootstrap {
@@ -12,16 +16,22 @@ export class FreeswitchServer implements OnApplicationBootstrap {
   private readonly _serverEnabled: boolean;
   private readonly _serverListenPort: number;
 
+  private readonly _botAddress: string;
+
   private readonly _log: LoggerService;
 
-  constructor(loggerFactory: LoggerFactory, fsConfig: FreeswitchConfig) {
+  constructor(
+    loggerFactory: LoggerFactory, fsConfig: FreeswitchConfig, appConfig: AppConfig,
+        @InjectRepository(Channel) private readonly _channelRepository: Repository<Channel>) {
     if (!fsConfig.serverEnabled) return;
 
     this._log = loggerFactory.createLogger(FreeswitchServer);
+    this._botAddress = appConfig.botAddress;
 
     this._serverEnabled = fsConfig.serverEnabled;
     this._serverListenPort = fsConfig.serverPort;
     this._server = fsConfig.serverEnabled && new FreeSwitchServer({ logger: new Logger(this._log, fsConfig.debug) });
+
 
     this._server.on('connection', async (socket, { data, body, uuid }) => {
       try {
@@ -40,10 +50,14 @@ export class FreeswitchServer implements OnApplicationBootstrap {
       await this._server.listen({ host: '0.0.0.0', port: this._serverListenPort });
 
       setInterval(async () => {
-        await this.countConnections()
+        // await this.countConnections()
         // console.log('Calls: ', await this.countConnections());
+        const channels = await this._channelRepository.find();
+        console.log('Channels: ', channels);
+
       }, 5000);
     }
+
 
   }
 
@@ -62,18 +76,27 @@ export class FreeswitchServer implements OnApplicationBootstrap {
       this._log.debug('Data: {}', JSON.stringify(data));
     }
 
-    let result = await socket.execute('answer', null);
-    if (isOk(result)) {
-      result = await socket.execute('playback', 'silence_stream://-1');
-      if (isOk(result)) {
-        const aResult = await socket.api(
-          `uuid_audio_fork ${uuid} start ws://10.8.0.3:3006 mono 8000 botbug ${uuid} true true 8000`
-        );
-        if (isOk(aResult)) {
-          this._log.info('Call {} connected', uuid);
-        }
-      }
+
+    const aResult = await socket.api(
+      `uuid_audio_fork ${uuid} start ${this._botAddress} mono 8000 botbug ${uuid} true true 8000`
+    );
+
+    if (aResult) {
+      this._log.info('Call {} connected', uuid);
     }
+
+    // let result = await socket.execute('answer', null);
+    // if (isOk(result)) {
+    //   result = await socket.execute('playback', 'silence_stream://-1');
+    //   if (isOk(result)) {
+    //     const aResult = await socket.api(
+    //       `uuid_audio_fork ${uuid} start ws://10.8.0.3:3006 mono 8000 botbug ${uuid} true true 8000`
+    //     );
+    //     if (isOk(aResult)) {
+    //       this._log.info('Call {} connected', uuid);
+    //     }
+    //   }
+    // }
 
   }
 

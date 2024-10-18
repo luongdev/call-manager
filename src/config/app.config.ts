@@ -6,6 +6,7 @@ export class AppConfig {
   nodeEnv: string;
   apiPrefix: string;
   logLevel: LogLevel;
+  botAddress: string;
 }
 
 export default registerAs<AppConfig>('app', () => {
@@ -18,5 +19,6 @@ export default registerAs<AppConfig>('app', () => {
         : 3000,
     apiPrefix: process.env.API_PREFIX || 'api',
     logLevel: (process.env.LOG_LEVEL || 'info').toLowerCase() as LogLevel,
+    botAddress: (process.env.BOT_ADDRESS || 'ws://localhost:3000'),
   };
 });
