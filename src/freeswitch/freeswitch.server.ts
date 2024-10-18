@@ -40,7 +40,8 @@ export class FreeswitchServer implements OnApplicationBootstrap {
       await this._server.listen({ host: '0.0.0.0', port: this._serverListenPort });
 
       setInterval(async () => {
-        console.log('Calls: ', await this.countConnections());
+        await this.countConnections()
+        // console.log('Calls: ', await this.countConnections());
       }, 5000);
     }
 
@@ -65,10 +66,15 @@ export class FreeswitchServer implements OnApplicationBootstrap {
     if (isOk(result)) {
       result = await socket.execute('playback', 'silence_stream://-1');
       if (isOk(result)) {
-        await socket.api(`uuid_audio_fork ${uuid} start `);
+        const aResult = await socket.api(
+          `uuid_audio_fork ${uuid} start ws://10.8.0.3:3006 mono 8000 botbug ${uuid} true true 8000`
+        );
+        if (isOk(aResult)) {
+          this._log.info('Call {} connected', uuid);
+        }
       }
     }
-    
+
   }
 
   private async onSocketDrop(data: SocketDrop) {
