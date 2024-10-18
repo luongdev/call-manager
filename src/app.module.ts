@@ -7,6 +7,7 @@ import freeswitchConfig from '@freeswitch/freeswitch.config';
 import { LoggerProviderModule } from './providers/logger/logger-provider.module';
 import { FreeswitchModule } from './freeswitch/freeswitch.module';
 import { WsModule } from './websocket/ws.module';
+import { DatabaseProviderModule } from './providers/database/database-provider.module';
 
 @Module({
   imports: [
@@ -14,9 +15,10 @@ import { WsModule } from './websocket/ws.module';
       isGlobal: true,
       load: [appConfig, databaseConfig, freeswitchConfig]
     }),
+    WsModule,
     FreeswitchModule,
     LoggerProviderModule,
-    WsModule
+    DatabaseProviderModule,
   ],
   providers: [AppService],
 })
