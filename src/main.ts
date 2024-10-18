@@ -7,6 +7,7 @@ import { VersioningType } from '@nestjs/common';
 import { ResolvePromisesInterceptor } from './utils/serializer.interceptor';
 
 import appConfigFn, { AppConfig } from '@config/app.config';
+import { WsAdapter } from '@nestjs/platform-ws';
 
 const appConfig = appConfigFn() as AppConfig;
 
@@ -15,7 +16,7 @@ async function bootstrap() {
     logger: [appConfig.logLevel]
   });
 
-  const loggerFactory= await app.resolve(LoggerFactory);
+  const loggerFactory = await app.resolve(LoggerFactory);
   app.useLogger(loggerFactory.createLogger('main'));
   app.enableShutdownHooks();
 
@@ -28,12 +29,14 @@ async function bootstrap() {
     new ResolvePromisesInterceptor(),
   )
 
+  app.useWebSocketAdapter(new WsAdapter(app));
+
   await app.listen(appConfig.port);
 }
 
 bootstrap().then(() => {
-  setInterval(() => {
-    const used = process.memoryUsage().heapUsed / 1024 / 1024;
-    console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
-  }, 5000);
+  // setInterval(() => {
+  // const used = process.memoryUsage().heapUsed / 1024 / 1024;
+  // console.log(`The script uses approximately ${Math.round(used * 100) / 100} MB`);
+  // }, 5000);
 }).catch(console.error);

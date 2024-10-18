@@ -40,3 +40,6 @@ export class Logger implements FreeSwitchClientLogger {
 
 }
 
+export function isOk(response?: { headers: Record<string, string | undefined> }): boolean {
+  return response?.headers?.['Reply-Text'] !== '-ERR';
+}
