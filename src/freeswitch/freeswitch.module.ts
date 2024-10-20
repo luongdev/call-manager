@@ -5,9 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { AllConfigType } from '@config/config.type';
 import { FreeswitchServer } from './freeswitch.server';
 import { AppConfig } from '@config/app.config';
-import { DatabaseProviderModule } from '../providers/database/database-provider.module';
+import { DatabaseProviderModule } from '@providers/database/database-provider.module';
 import { Channel } from './entity/channel.entity';
 import { ChannelController } from './controller/channel.controller';
+import { SocketStore } from './freeswitch.type';
+import { ChannelSocketStore } from './store/channel-socket-store';
 
 @Module({
   providers: [
@@ -26,10 +28,16 @@ import { ChannelController } from './controller/channel.controller';
         return allConfig.get<FreeswitchConfig>('app', { infer: true });
       },
       inject: [ConfigService<AllConfigType>]
+    },
+    {
+      provide: SocketStore,
+      useFactory: (client: FreeswitchService) => {
+        return new ChannelSocketStore(client);
+      },
     }
   ],
   imports: [DatabaseProviderModule, DatabaseProviderModule.forFeature(Channel)],
-  exports: [FreeswitchService, FreeswitchServer, FreeswitchConfig],
+  exports: [FreeswitchService, FreeswitchServer, FreeswitchConfig, SocketStore],
   controllers: [ChannelController],
 })
 export class FreeswitchModule {

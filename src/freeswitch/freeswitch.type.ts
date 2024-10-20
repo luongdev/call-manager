@@ -1,5 +1,7 @@
-import { FreeSwitchClientLogger, StringMap } from 'esl';
+import { FreeSwitchClientLogger, FreeSwitchResponse, StringMap } from 'esl';
 import { LoggerService } from '@logger/logger.service';
+
+export type ESLSocket = FreeSwitchResponse;
 
 export type SocketConnection = {
     uuid?: string;
@@ -17,6 +19,14 @@ export type SocketDrop = {
     remoteFamily?: string;
 }
 
+export interface SocketStore {
+    set(key: string, socket: ESLSocket, onClose?: () => void): void;
+    getOrDefault(key: string): ESLSocket;
+    close(key: string): void;
+    clear(): void;
+}
+
+export const SocketStore = Symbol('SocketStore');
 
 export class Logger implements FreeSwitchClientLogger {
   constructor(private readonly _log: LoggerService, private readonly _debug = false) {

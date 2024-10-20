@@ -1,13 +1,11 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { FreeSwitchResponse, FreeSwitchServer } from 'esl';
 import { LoggerService } from '@logger/logger.service';
 import { LoggerFactory } from '../providers/logger/logger.factory';
 import { FreeswitchConfig } from './freeswitch.config';
-import { Logger, SocketDrop } from './freeswitch.type';
+import { Logger, SocketStore } from './freeswitch.type';
 import { AppConfig } from '../config/app.config';
-import { Channel } from './entity/channel.entity';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+
 import { parse } from 'sdp-transform';
 
 @Injectable()
@@ -17,13 +15,17 @@ export class FreeswitchServer implements OnApplicationBootstrap {
   private readonly _serverEnabled: boolean;
   private readonly _serverListenPort: number;
 
+  private readonly _socketStore: SocketStore;
   private readonly _botAddress: string;
 
   private readonly _log: LoggerService;
 
   constructor(
-    loggerFactory: LoggerFactory, fsConfig: FreeswitchConfig, appConfig: AppConfig,
-        @InjectRepository(Channel) private readonly _channelRepository: Repository<Channel>) {
+    loggerFactory: LoggerFactory,
+    fsConfig: FreeswitchConfig,
+    appConfig: AppConfig,
+    @Inject(SocketStore) socketStore: SocketStore) {
+
     if (!fsConfig.serverEnabled) return;
 
     this._log = loggerFactory.createLogger(FreeswitchServer);
@@ -33,27 +35,21 @@ export class FreeswitchServer implements OnApplicationBootstrap {
     this._serverListenPort = fsConfig.serverPort;
     this._server = fsConfig.serverEnabled && new FreeSwitchServer({ logger: new Logger(this._log, fsConfig.debug) });
 
+    this._socketStore = socketStore;
 
     this._server.on('connection', async (socket, { data, body, uuid }) => {
       try {
+        this._socketStore.set(uuid, socket);
         await this.onSocketConnect(socket, { data, body, uuid });
       } catch (e) {
         this._log.error('Execute call {}', e, uuid);
       }
     });
-    this._server.on('drop', this.onSocketDrop.bind(this));
-    this._server.on('error', this.onSocketError.bind(this));
-
   }
 
   async onApplicationBootstrap() {
     if (this._serverEnabled) {
       await this._server.listen({ host: '0.0.0.0', port: this._serverListenPort });
-
-      // setInterval(async () => {
-      // await this.countConnections()
-      // console.log('Calls: ', await this.countConnections());
-      // }, 5000);
     }
   }
 
@@ -95,17 +91,5 @@ export class FreeswitchServer implements OnApplicationBootstrap {
     if (aResult) {
       this._log.info('Call {} connected', uuid);
     }
-  }
-
-  private async onSocketDrop(data: SocketDrop) {
-    console.log('Drop', data);
-
-    await new Promise(resolve => resolve(null));
-  }
-
-  private async onSocketError(error: Error) {
-    console.log('Error', error);
-
-    await new Promise(resolve => resolve(null));
   }
 }

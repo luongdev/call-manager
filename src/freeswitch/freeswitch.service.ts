@@ -3,10 +3,8 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { LoggerFactory } from '@providers/logger/logger.factory';
 import { LoggerService } from '@logger/logger.service';
 import { FreeswitchConfig } from './freeswitch.config';
-import { Logger } from './freeswitch.type';
+import { ESLSocket, Logger } from './freeswitch.type';
 
-
-type ESLSocket = FreeSwitchResponse;
 
 @Injectable()
 export class FreeswitchService implements OnApplicationBootstrap {
@@ -65,4 +63,7 @@ export class FreeswitchService implements OnApplicationBootstrap {
     }
   }
 
+  get socket(): ESLSocket {
+    return this._instance;
+  }
 }
