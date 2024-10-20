@@ -23,7 +23,7 @@ export class WsGateway implements OnGatewayInit, OnGatewayConnection<WebSocket>,
       }
 
       this.streams[client['uuid']].write(message);
-      console.log(`Received RTP from customer `);
+      // console.log(`Received RTP from customer `);
     })
 
 
@@ -37,7 +37,7 @@ export class WsGateway implements OnGatewayInit, OnGatewayConnection<WebSocket>,
 
       reader.on('data', (data) => {
         client.send(data);
-        console.log(`BOT sent RTP to customer`);
+        // console.log(`BOT sent RTP to customer`);
         reader.pause();
 
         setTimeout(() => {

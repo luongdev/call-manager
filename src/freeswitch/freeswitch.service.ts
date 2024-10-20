@@ -1,9 +1,9 @@
 import { FreeSwitchClient, FreeSwitchResponse } from 'esl';
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { LoggerFactory } from '@providers/logger/logger.factory';
 import { LoggerService } from '@logger/logger.service';
 import { FreeswitchConfig } from './freeswitch.config';
-import { ESLSocket, Logger } from './freeswitch.type';
+import { ESLSocket, Logger, SocketStore } from './freeswitch.type';
 
 
 @Injectable()
@@ -15,7 +15,10 @@ export class FreeswitchService implements OnApplicationBootstrap {
   private readonly _sendTimeout: number;
 
   private readonly _log: LoggerService;
-  constructor(loggerFactory: LoggerFactory, fsConfig: FreeswitchConfig) {
+  constructor(
+    loggerFactory: LoggerFactory,
+    fsConfig: FreeswitchConfig,
+      @Inject(SocketStore) socketStore: SocketStore) {
     if (!fsConfig.clientEnabled) return;
     
     this._log = loggerFactory.createLogger(FreeswitchService);
@@ -29,6 +32,7 @@ export class FreeswitchService implements OnApplicationBootstrap {
     this._sendTimeout = fsConfig.sendTimeout;
 
     this._client.on('connect', (call: FreeSwitchResponse) => {
+      socketStore.set('inbound', call);
       this._instance = call;
       this._log.log('Connected to FreeSwitch [{}:{}]', fsConfig.host, fsConfig.port);
     });

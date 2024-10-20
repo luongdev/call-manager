@@ -29,12 +29,7 @@ import { ChannelSocketStore } from './store/channel-socket-store';
       },
       inject: [ConfigService<AllConfigType>]
     },
-    {
-      provide: SocketStore,
-      useFactory: (client: FreeswitchService) => {
-        return new ChannelSocketStore(client);
-      },
-    }
+    { provide: SocketStore, useValue: new ChannelSocketStore() },
   ],
   imports: [DatabaseProviderModule, DatabaseProviderModule.forFeature(Channel)],
   exports: [FreeswitchService, FreeswitchServer, FreeswitchConfig, SocketStore],

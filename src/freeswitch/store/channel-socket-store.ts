@@ -1,19 +1,14 @@
 import { ESLSocket, SocketStore } from '../freeswitch.type';
-import { FreeswitchService } from '../freeswitch.service';
 
 export class ChannelSocketStore implements SocketStore {
 
   private readonly _sockets = new Map<string, ESLSocket>();
 
-  constructor(private readonly _client: FreeswitchService) {
-    if (this._client?.socket) {
-      this._sockets.set('inbound', this._client.socket)
-    }
+  constructor() {
   }
 
   clear() {
     this._sockets.clear();
-    this._sockets.set('inbound', this._client.socket)
   }
 
   close(key: string): void {
@@ -25,7 +20,7 @@ export class ChannelSocketStore implements SocketStore {
   }
 
   getOrDefault(key: string): ESLSocket {
-    return this._sockets.get(key) ?? this._client.socket;
+    return this._sockets.get(key) ?? this._sockets.get('inbound');
   }
 
   set(key: string, socket: ESLSocket, onClose?: () => void): void {

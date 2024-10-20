@@ -31,7 +31,9 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new WsAdapter(app));
 
-  await app.listen(appConfig.port);
+  await app.listen(appConfig.port, () => {
+    console.log(`Server started on http://0.0.0.0:${appConfig.port}`);
+  });
 }
 
 bootstrap().then(() => {
