@@ -69,7 +69,7 @@ export class FreeswitchServer implements OnApplicationBootstrap {
     }
 
     const reqSdp = parse(data['variable_switch_r_sdp']);
-    const rtpCodecs = reqSdp?.media?.find(m => m.type === 'audio')?.rtp?.map(r => r);
+    // const rtpCodecs = reqSdp?.media?.find(m => m.type === 'audio')?.rtp?.map(r => r);
 
     const metadata = {
       id: uuid,
@@ -78,7 +78,7 @@ export class FreeswitchServer implements OnApplicationBootstrap {
       audio: {
         ip: reqSdp?.connection?.ip,
         port: reqSdp?.media.find(m => m.type === 'audio')?.port,
-        codecs: rtpCodecs,
+        // codecs: rtpCodecs,
       }
     };
     const sample = 8000;
