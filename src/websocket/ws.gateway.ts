@@ -27,21 +27,21 @@ export class WsGateway implements OnGatewayInit, OnGatewayConnection<WebSocket>,
     })
 
 
-    const reader = new Reader();
+    client['reader'] = new Reader();
     const readerStream = createReadStream(`audio/fake_bot_stream.wav`);
-    readerStream.pipe(reader);
+    readerStream.pipe(client['reader']);
 
-    reader.on('format', (format) => {
+    client['reader'].on('format', (format) => {
       const samplesPerChunk = 1024;
       const timePerChunk = (samplesPerChunk / format.sampleRate) * 1000;
 
-      reader.on('data', (data) => {
+      client['reader'].on('data', (data) => {
         client.send(data);
         // console.log(`BOT sent RTP to customer`);
-        reader.pause();
+        client['reader'].pause();
 
         setTimeout(() => {
-          reader.resume();
+          client['reader'].resume();
         }, timePerChunk);
       });
 
@@ -50,6 +50,8 @@ export class WsGateway implements OnGatewayInit, OnGatewayConnection<WebSocket>,
 
   handleDisconnect(client: WebSocket): any {
     console.log(`On client disconnect `, client['uuid']);
+
+    client['reader'].pause();
 
     this.streams[client['uuid']]?.close();
   }

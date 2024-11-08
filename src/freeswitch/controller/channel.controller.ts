@@ -36,10 +36,9 @@ export class ChannelController {
       const channel = await this._channelRepository.findOne({ where: { id } });
       if (channel) {
         const sk = this._socketStore.getOrDefault(id);
-        const res = await sk.execute_uuid(id, 'transfer', destination);
-
-
-        return { success: true, res, message: 'Channel transferred' };
+        const res =
+                await sk.execute_uuid(id, 'bridge', `{api_on_answer=uuid_audio_fork ${id} stop botbug}${destination}`);
+        return { success: true, message: 'Channel transferred' };
       }
 
       return { success: false, message: 'Channel not found' };
